@@ -1,0 +1,35 @@
+PODS:
+  - BDASignalSDK (1.0.6)
+  - Flutter (1.0.0)
+  - integration_test (0.0.1):
+    - Flutter
+  - jl_signals (0.0.1):
+    - BDASignalSDK
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - integration_test (from `.symlinks/plugins/integration_test/ios`)
+  - jl_signals (from `.symlinks/plugins/jl_signals/ios`)
+
+SPEC REPOS:
+  trunk:
+    - BDASignalSDK
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  integration_test:
+    :path: ".symlinks/plugins/integration_test/ios"
+  jl_signals:
+    :path: ".symlinks/plugins/jl_signals/ios"
+
+SPEC CHECKSUMS:
+  BDASignalSDK: 8bb707e922e9fef1718e66ba3c36d9975d665e09
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
+  jl_signals: f9574f8e8b0a213b5456ac48a9dbcd4c18340850
+
+PODFILE CHECKSUM: 50fd0505f665bfa50c65bca6a6da7109c67dd0c6
+
+COCOAPODS: 1.16.2
