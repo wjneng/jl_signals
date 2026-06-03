@@ -4,7 +4,7 @@
 
 支持平台：
 
-- Android
+- Android 7.0/API 24 及以上
 - iOS 13.0 及以上
 
 ## 1. 添加依赖
@@ -13,11 +13,10 @@
 
 ```yaml
 dependencies:
-  jl_signals:
-    path: ../jl_signals
+  jl_signals: ^0.0.1
 ```
 
-如果使用 Git 或私有仓库依赖，请按业务项目的包管理方式替换 `path`。
+本地联调时可以临时改用 `path` 依赖，发布版本建议使用 pub.dev 托管版本。
 
 ## 2. Android 配置
 

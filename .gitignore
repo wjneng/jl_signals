@@ -1,0 +1,30 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.idea/
+*.iml
+
+# Flutter/Dart/Pub
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub/
+.pub-cache/
+build/
+coverage/
+doc/api/
+
+# Android
+.gradle/
+captures/
+.cxx/
+local.properties
+
+# iOS
+ios/Flutter/.last_build_id
+Pods/
+DerivedData/
+

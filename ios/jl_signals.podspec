@@ -10,9 +10,9 @@ Pod::Spec.new do |s|
 Flutter wrapper for the Ocean Engine conversion signal SDK. This plugin keeps
 the Dart API small and calls the native SDK methods documented by Ocean Engine.
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://github.com/wjneng/jl_signals'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'JL Signals' => 'dev@example.com' }
+  s.author           = { 'wjneng' => 'https://github.com/wjneng' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.public_header_files = 'Classes/**/*.h'
