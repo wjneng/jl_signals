@@ -121,15 +121,17 @@ await signals.sendLaunchEvent();
 
 ## 6. Deeplink 处理
 
-当 App 收到 deeplink 后，将完整 URL 传给插件：
+iOS 侧插件会自动监听 `AppDelegate` 的 `openURL` 回调，并将完整 URL 传给巨量引擎转化 SDK。宿主 App 仍需按巨量引擎要求配置 URL Scheme，推荐使用应用包名作为 scheme。
+
+如果业务使用自定义 `SceneDelegate`，或已经在 Dart 层通过其他 deeplink 插件拿到了 URL，也可以手动将完整 URL 传给插件：
 
 ```dart
 await signals.handleDeeplink(
-  'com.example.app://oceanengine/ads?clickid=xxx',
+  'com.example.app://oceanengine/ads?clickid=xxx&track_id=xxx',
 );
 ```
 
-获取当前缓存的 clickid：
+获取 SDK 当前缓存的 clickid：
 
 ```dart
 final clickId = await signals.getClickId();
@@ -169,6 +171,7 @@ await signals.enablePurchaseEvent();
 final deviceId = await JlSignalDeviceIds.getDeviceId();
 final idfv = await JlSignalDeviceIds.getIdfv();
 final androidId = await JlSignalDeviceIds.getAndroidId();
+final oaid = await JlSignalDeviceIds.getOaid();
 ```
 
 返回规则：
@@ -176,6 +179,7 @@ final androidId = await JlSignalDeviceIds.getAndroidId();
 - `getDeviceId()`：iOS 返回 IDFV，Android 返回 Android ID，其他平台返回 `null`。
 - `getIdfv()`：仅 iOS 返回 IDFV，其他平台返回 `null`。
 - `getAndroidId()`：仅 Android 返回 Android ID，其他平台返回 `null`。
+- `getOaid()`：仅 Android 返回 OAID；如果宿主未接入 OAID SDK、设备不支持、读取受限或当前平台不是 Android，则返回 `null`。
 
 ## 9. 配置参数
 
@@ -211,10 +215,12 @@ final androidId = await JlSignalDeviceIds.getAndroidId();
 - `getDeviceId()`
 - `getIdfv()`
 - `getAndroidId()`
+- `getOaid()`
 
 ## 11. 接入注意事项
 
 - 采集设备信息、初始化 SDK、读取设备标识前，必须先获得用户对隐私政策的同意。
+- `getOaid()` 会优先返回 `customOaid`；未传入时会尝试读取宿主 App 已接入的 MSA OAID SDK，未接入时返回 `null`。
 - 如使用 IDFA，必须先完成 iOS ATT 授权流程，并按 App Store 要求声明追踪用途。
 - `customOaid`、`customAndroidId` 必须传入真实且合规的业务值，错误值会影响归因。
 - 服务端归因接口、转化回传、归因优先级比较由业务服务端处理，不在本插件内完成。

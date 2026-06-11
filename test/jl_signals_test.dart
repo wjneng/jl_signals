@@ -75,6 +75,11 @@ class MockJlSignalsPlatform
   Future<String?> getAndroidId() async {
     return 'android-id-1';
   }
+
+  @override
+  Future<String?> getOaid() async {
+    return 'oaid-1';
+  }
 }
 
 void main() {
@@ -111,6 +116,7 @@ void main() {
       await jlSignals.sendLaunchEvent();
       final idfv = await JlSignalDeviceIds.getIdfv();
       final androidId = await JlSignalDeviceIds.getAndroidId();
+      final oaid = await JlSignalDeviceIds.getOaid();
 
       expect(fakePlatform.lastConfig, config);
       expect(fakePlatform.lastIdfaEnabled, isTrue);
@@ -128,6 +134,7 @@ void main() {
       expect(fakePlatform.launchSent, isTrue);
       expect(idfv, 'idfv-1');
       expect(androidId, 'android-id-1');
+      expect(oaid, 'oaid-1');
     },
   );
 

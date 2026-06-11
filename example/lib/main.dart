@@ -101,6 +101,7 @@ class _MyAppState extends State<MyApp> {
       final deviceId = await JlSignalDeviceIds.getDeviceId();
       final idfv = await JlSignalDeviceIds.getIdfv();
       final androidId = await JlSignalDeviceIds.getAndroidId();
+      final oaid = await JlSignalDeviceIds.getOaid();
       if (!mounted) {
         return;
       }
@@ -109,6 +110,7 @@ class _MyAppState extends State<MyApp> {
           deviceId == null ? '当前平台设备标识: 暂无' : '当前平台设备标识: $deviceId',
           idfv == null ? 'IDFV: 暂无' : 'IDFV: $idfv',
           androidId == null ? 'Android ID: 暂无' : 'Android ID: $androidId',
+          oaid == null ? 'OAID: 暂无' : 'OAID: $oaid',
         ];
         _message = lines.join('\n');
       });

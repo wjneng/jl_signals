@@ -28,7 +28,7 @@ SPEC CHECKSUMS:
   BDASignalSDK: 8bb707e922e9fef1718e66ba3c36d9975d665e09
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
-  jl_signals: f9574f8e8b0a213b5456ac48a9dbcd4c18340850
+  jl_signals: 65bf08c7adfbdca990dbdd69a159afbf3c789d49
 
 PODFILE CHECKSUM: 50fd0505f665bfa50c65bca6a6da7109c67dd0c6
 

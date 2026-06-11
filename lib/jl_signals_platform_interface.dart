@@ -64,4 +64,8 @@ abstract class JlSignalsPlatform extends PlatformInterface {
   Future<String?> getAndroidId() {
     throw UnimplementedError('getAndroidId() has not been implemented.');
   }
+
+  Future<String?> getOaid() {
+    throw UnimplementedError('getOaid() has not been implemented.');
+  }
 }

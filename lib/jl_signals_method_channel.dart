@@ -80,4 +80,9 @@ class MethodChannelJlSignals extends JlSignalsPlatform {
   Future<String?> getAndroidId() {
     return methodChannel.invokeMethod<String>('getAndroidId');
   }
+
+  @override
+  Future<String?> getOaid() {
+    return methodChannel.invokeMethod<String>('getOaid');
+  }
 }

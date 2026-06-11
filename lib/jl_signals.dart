@@ -129,4 +129,11 @@ class JlSignalDeviceIds {
   static Future<String?> getAndroidId() {
     return JlSignalsPlatform.instance.getAndroidId();
   }
+
+  /// Android: OAID。iOS 返回 null。
+  ///
+  /// 请在用户同意隐私政策后调用。部分设备、系统环境或未接入 OAID SDK 时会返回 null。
+  static Future<String?> getOaid() {
+    return JlSignalsPlatform.instance.getOaid();
+  }
 }

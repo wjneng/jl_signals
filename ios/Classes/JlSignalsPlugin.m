@@ -1,4 +1,5 @@
 #import "JlSignalsPlugin.h"
+#import <BDASignalSDK/BDASignalManager.h>
 #if __has_include(<AppTrackingTransparency/AppTrackingTransparency.h>)
 #import <AppTrackingTransparency/AppTrackingTransparency.h>
 #endif
@@ -14,6 +15,7 @@ static NSString *const JlSignalsErrorCode = @"jl_signals_error";
             binaryMessenger:[registrar messenger]];
   JlSignalsPlugin* instance = [[JlSignalsPlugin alloc] init];
   [registrar addMethodCallDelegate:instance channel:channel];
+  [registrar addApplicationDelegate:instance];
 }
 
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
@@ -37,6 +39,8 @@ static NSString *const JlSignalsErrorCode = @"jl_signals_error";
     } else if ([@"getIdfv" isEqualToString:call.method]) {
       result([self getIdfv]);
     } else if ([@"getAndroidId" isEqualToString:call.method]) {
+      result(nil);
+    } else if ([@"getOaid" isEqualToString:call.method]) {
       result(nil);
     } else if ([@"registerOptionalData" isEqualToString:call.method]) {
       [self registerOptionalData:[self dictionaryValue:call.arguments key:@"data"]];
@@ -127,37 +131,31 @@ static NSString *const JlSignalsErrorCode = @"jl_signals_error";
     return;
   }
 
-  Class managerClass = [self signalManagerClass];
-  SEL selector = NSSelectorFromString(@"anylyseDeeplinkClickidWithOpenUrl:");
-  if (![managerClass respondsToSelector:selector]) {
-    [self throwMissingSelector:selector];
-  }
-
-  void (*func)(id, SEL, NSString *) =
-      (void (*)(id, SEL, NSString *))[managerClass methodForSelector:selector];
-  func(managerClass, selector, url);
+  [BDASignalManager anylyseDeeplinkClickidWithOpenUrl:url];
 }
 
 - (NSString *)getClickId {
-  NSArray<NSString *> *classNames = @[@"BDASignalSDK", @"BDASignalManager"];
-  NSArray<NSString *> *selectors = @[@"getClickId", @"getClickID", @"getClickid", @"clickId"];
+  return [BDASignalManager getClickId];
+}
 
-  for (NSString *className in classNames) {
-    Class clazz = NSClassFromString(className);
-    if (!clazz) {
-      continue;
-    }
-    for (NSString *selectorName in selectors) {
-      SEL selector = NSSelectorFromString(selectorName);
-      if (![clazz respondsToSelector:selector]) {
-        continue;
-      }
-      id (*func)(id, SEL) = (id (*)(id, SEL))[clazz methodForSelector:selector];
-      id value = func(clazz, selector);
-      return [value isKindOfClass:NSString.class] ? value : nil;
-    }
-  }
-  return nil;
+- (BOOL)application:(UIApplication *)application
+            openURL:(NSURL *)url
+            options:(NSDictionary<UIApplicationOpenURLOptionsKey, id> *)options {
+  [self handleDeeplink:url.absoluteString];
+  return NO;
+}
+
+- (BOOL)application:(UIApplication *)application handleOpenURL:(NSURL *)url {
+  [self handleDeeplink:url.absoluteString];
+  return NO;
+}
+
+- (BOOL)application:(UIApplication *)application
+              openURL:(NSURL *)url
+    sourceApplication:(NSString *)sourceApplication
+           annotation:(id)annotation {
+  [self handleDeeplink:url.absoluteString];
+  return NO;
 }
 
 - (NSString *)getIdfv {

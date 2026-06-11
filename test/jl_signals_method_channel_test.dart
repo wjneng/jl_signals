@@ -24,6 +24,9 @@ void main() {
           if (methodCall.method == 'getAndroidId') {
             return 'android-id-1';
           }
+          if (methodCall.method == 'getOaid') {
+            return 'oaid-1';
+          }
           return null;
         });
   });
@@ -76,11 +79,13 @@ void main() {
     await platform.sendLaunchEvent();
     final idfv = await platform.getIdfv();
     final androidId = await platform.getAndroidId();
+    final oaid = await platform.getOaid();
 
     expect(trackingStatus, JlTrackingAuthorizationStatus.notDetermined);
     expect(clickId, 'click-1');
     expect(idfv, 'idfv-1');
     expect(androidId, 'android-id-1');
+    expect(oaid, 'oaid-1');
     expect(calls.map((call) => call.method), <String>[
       'enableIdfa',
       'requestTrackingAuthorization',
@@ -92,6 +97,7 @@ void main() {
       'sendLaunchEvent',
       'getIdfv',
       'getAndroidId',
+      'getOaid',
     ]);
   });
 }

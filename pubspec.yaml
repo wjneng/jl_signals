@@ -1,6 +1,6 @@
 name: jl_signals
 description: Flutter plugin for the Ocean Engine conversion signal SDK.
-version: 0.0.1
+version: 0.0.3
 homepage: https://github.com/wjneng
 repository: https://github.com/wjneng/jl_signals
 issue_tracker: https://github.com/wjneng/jl_signals/issues

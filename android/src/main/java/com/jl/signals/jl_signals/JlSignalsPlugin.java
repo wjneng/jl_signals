@@ -17,8 +17,16 @@ import com.bytedance.ads.convert.event.ConvertReportHelper;
 
 import org.json.JSONObject;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
@@ -36,6 +44,7 @@ public class JlSignalsPlugin implements FlutterPlugin, MethodCallHandler, Activi
   private Context applicationContext;
   private Activity activity;
   private Handler mainHandler;
+  private String customOaid;
 
   @Override
   public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
@@ -69,6 +78,9 @@ public class JlSignalsPlugin implements FlutterPlugin, MethodCallHandler, Activi
               applicationContext.getContentResolver(),
               Settings.Secure.ANDROID_ID
           ));
+          break;
+        case "getOaid":
+          getOaid(result);
           break;
         case "getIdfv":
           result.success(null);
@@ -115,6 +127,7 @@ public class JlSignalsPlugin implements FlutterPlugin, MethodCallHandler, Activi
     config.setEnableOAID(boolValue(configMap, "enableOaid", true));
 
     String customOaid = stringValue(configMap, "customOaid");
+    this.customOaid = customOaid;
     if (!TextUtils.isEmpty(customOaid)) {
       config.setCustomOaidCallback(() -> customOaid);
     }
@@ -179,6 +192,215 @@ public class JlSignalsPlugin implements FlutterPlugin, MethodCallHandler, Activi
     }
     JSONObject json = new JSONObject(params == null ? new HashMap<String, Object>() : params);
     ConvertReportHelper.onEventV3(name, json);
+  }
+
+  private void getOaid(Result result) {
+    if (!TextUtils.isEmpty(customOaid)) {
+      result.success(customOaid);
+      return;
+    }
+    if (applicationContext == null) {
+      result.success(null);
+      return;
+    }
+
+    new Thread(() -> {
+      String oaid = readOaidFromBytedanceSdk(applicationContext);
+      if (TextUtils.isEmpty(oaid)) {
+        oaid = readOaidFromMsaSdk(applicationContext);
+      }
+      postResult(result, emptyToNull(oaid));
+    }, "jl-signals-oaid").start();
+  }
+
+  private String readOaidFromBytedanceSdk(Context context) {
+    String cachedOaid = readCachedBytedanceOaid(context);
+    if (!TextUtils.isEmpty(cachedOaid)) {
+      return cachedOaid;
+    }
+
+    try {
+      Class<?> builderClass = Class.forName("com.bytedance.ads.convert.flat.k.b$a");
+      Constructor<?> builderConstructor = builderClass.getConstructor(Context.class);
+      Object builder = builderConstructor.newInstance(context);
+
+      Class<?> resolverClass = Class.forName("com.bytedance.ads.convert.flat.k.b");
+      Constructor<?> resolverConstructor = resolverClass.getConstructor(builderClass);
+      Object resolver = resolverConstructor.newInstance(builder);
+
+      Method resolve = resolverClass.getMethod(
+          "a",
+          Context.class,
+          Class.forName("com.bytedance.ads.convert.flat.k.d")
+      );
+      Object resolved = resolve.invoke(resolver, context, null);
+      return readBytedanceOaidResultId(resolved);
+    } catch (Throwable ignored) {
+      return null;
+    }
+  }
+
+  private String readCachedBytedanceOaid(Context context) {
+    try {
+      Object storage = Class.forName("com.bytedance.ads.convert.flat.k.e")
+          .getConstructor(Context.class)
+          .newInstance(context);
+      Method read = storage.getClass().getMethod("a");
+      Object result = read.invoke(storage);
+      return readBytedanceOaidResultId(result);
+    } catch (Throwable ignored) {
+      return null;
+    }
+  }
+
+  private String readBytedanceOaidResultId(Object result) {
+    if (result == null) {
+      return null;
+    }
+    try {
+      Field idField = result.getClass().getField("a");
+      Object value = idField.get(result);
+      return value instanceof String ? (String) value : null;
+    } catch (Throwable ignored) {
+      return null;
+    }
+  }
+
+  private String readOaidFromMsaSdk(Context context) {
+    try {
+      Class<?> helperClass = Class.forName("com.bun.miitmdid.core.MdidSdkHelper");
+      Class<?> listenerClass = findClass(
+          "com.bun.miitmdid.interfaces.IIdentifierListener",
+          "com.bun.supplier.IIdentifierListener"
+      );
+      if (listenerClass == null) {
+        return null;
+      }
+
+      tryInitMsaLibrary(context);
+
+      CountDownLatch latch = new CountDownLatch(1);
+      AtomicBoolean completed = new AtomicBoolean(false);
+      String[] oaidBox = new String[1];
+      InvocationHandler handler = (proxy, method, args) -> {
+        if ("OnSupport".equals(method.getName())) {
+          Object supplier = findSupplierArgument(args);
+          oaidBox[0] = readSupplierOaid(supplier);
+          completed.set(true);
+          latch.countDown();
+        }
+        return null;
+      };
+      Object listener = Proxy.newProxyInstance(
+          listenerClass.getClassLoader(),
+          new Class<?>[]{listenerClass},
+          handler
+      );
+
+      Method initSdk = findInitSdkMethod(helperClass, listenerClass);
+      if (initSdk == null) {
+        return null;
+      }
+      initSdk.invoke(null, context, true, listener);
+
+      if (!completed.get()) {
+        latch.await(2500, TimeUnit.MILLISECONDS);
+      }
+      return oaidBox[0];
+    } catch (ClassNotFoundException ignored) {
+      return null;
+    } catch (Throwable ignored) {
+      return null;
+    }
+  }
+
+  private void tryInitMsaLibrary(Context context) {
+    try {
+      Class<?> libraryClass = Class.forName("com.bun.miitmdid.core.JLibrary");
+      Method initEntry = libraryClass.getMethod("InitEntry", Context.class);
+      initEntry.invoke(null, context);
+    } catch (Throwable ignored) {
+      // Some MSA SDK versions do not require explicit JLibrary initialization.
+    }
+  }
+
+  private Class<?> findClass(String... classNames) {
+    for (String className : classNames) {
+      try {
+        return Class.forName(className);
+      } catch (ClassNotFoundException ignored) {
+        // Try the next known package name.
+      }
+    }
+    return null;
+  }
+
+  private Method findInitSdkMethod(Class<?> helperClass, Class<?> listenerClass) {
+    for (Method method : helperClass.getMethods()) {
+      Class<?>[] parameterTypes = method.getParameterTypes();
+      if (!"InitSdk".equals(method.getName()) || parameterTypes.length != 3) {
+        continue;
+      }
+      if (Context.class.isAssignableFrom(parameterTypes[0])
+          && parameterTypes[1] == boolean.class
+          && parameterTypes[2].isAssignableFrom(listenerClass)) {
+        return method;
+      }
+    }
+    return null;
+  }
+
+  private Object findSupplierArgument(Object[] args) {
+    if (args == null) {
+      return null;
+    }
+    for (Object arg : args) {
+      if (arg != null && !(arg instanceof Boolean)) {
+        return arg;
+      }
+    }
+    return null;
+  }
+
+  private String readSupplierOaid(Object supplier) {
+    if (supplier == null) {
+      return null;
+    }
+    try {
+      for (String methodName : new String[]{"getOAID", "getOaid", "getOAId"}) {
+        try {
+          Method method = supplier.getClass().getMethod(methodName);
+          Object value = method.invoke(supplier);
+          if (value instanceof String && !TextUtils.isEmpty((String) value)) {
+            return (String) value;
+          }
+        } catch (NoSuchMethodException ignored) {
+          // Try the next common method spelling.
+        }
+      }
+    } catch (Throwable ignored) {
+      return null;
+    } finally {
+      try {
+        Method shutDown = supplier.getClass().getMethod("shutDown");
+        shutDown.invoke(supplier);
+      } catch (Throwable ignored) {
+        // Not all supplier implementations expose shutDown.
+      }
+    }
+    return null;
+  }
+
+  private String emptyToNull(String value) {
+    return TextUtils.isEmpty(value) ? null : value;
+  }
+
+  private void postResult(Result result, String value) {
+    if (mainHandler == null || Looper.myLooper() == Looper.getMainLooper()) {
+      result.success(value);
+      return;
+    }
+    mainHandler.post(() -> result.success(value));
   }
 
   private void sendNativeCallback(String method, Map<String, Object> data) {
